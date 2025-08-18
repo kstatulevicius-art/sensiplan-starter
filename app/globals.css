@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0b1220;
+  --fg: #e6f0ff;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--fg);
+}
+a { text-decoration: underline; }
+.container { @apply mx-auto max-w-3xl px-6; }
+.card { @apply rounded-2xl bg-white/5 p-6 border border-white/10 shadow; }
+.btn { @apply inline-flex items-center gap-2 rounded-xl px-4 py-2 bg-sky-600 text-white hover:bg-sky-500 transition; }
+.badge { @apply inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold; }
