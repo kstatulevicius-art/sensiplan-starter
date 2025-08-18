@@ -1,24 +1,43 @@
-import Link from "next/link";
+import Link from 'next/link'
+import { GlassCard, Section } from '@/components/Glass'
 
 export default function Page() {
   return (
-    <div className="space-y-8">
-      <section className="card">
-        <h1 className="text-3xl font-bold mb-3">Track fertility the Sensiplan way</h1>
-        <p className="opacity-90">
-          Evidence-based symptothermal rules, offline-first, privacy by default.
-        </p>
-        <div className="mt-6 flex gap-3">
-          <Link href="/app" className="btn">Open Tracker</Link>
-          <Link href="/how-it-works" className="btn bg-white/10 hover:bg-white/20">Learn More</Link>
+    <>
+      <Section className="pt-8 md:pt-16">
+        <div className="text-center max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full bg-white/70 border border-black/5 text-xs text-slate-600">
+            <span>Symptothermal • Sensiplan</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+            A beautiful, private way to track fertility
+          </h1>
+          <p className="mt-4 text-lg text-slate-600">
+            Glass-smooth UI, offline-first, and evidence-based rules. Your data stays with you.
+          </p>
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link href="/app" className="btn">Open Tracker</Link>
+            <Link href="/how-it-works" className="btn secondary">Learn More</Link>
+          </div>
         </div>
-      </section>
+      </Section>
 
-      <section className="grid md:grid-cols-3 gap-4">
-        <div className="card"><h3 className="font-semibold mb-2">Offline-first</h3><p>Works without internet; your data stays on your device.</p></div>
-        <div className="card"><h3 className="font-semibold mb-2">Explainable</h3><p>Every day shows “why” based on Sensiplan rules.</p></div>
-        <div className="card"><h3 className="font-semibold mb-2">Exportable</h3><p>Export/import your data anytime (JSON).</p></div>
-      </section>
-    </div>
-  );
+      <Section>
+        <div className="grid md:grid-cols-3 gap-5">
+          <GlassCard>
+            <h3 className="font-semibold text-lg">Glass UI</h3>
+            <p className="mt-2 text-slate-600">Modern liquid-glass cards and soft shadows, readable in daylight.</p>
+          </GlassCard>
+          <GlassCard>
+            <h3 className="font-semibold text-lg">Offline-first</h3>
+            <p className="mt-2 text-slate-600">Works without internet; your entries are stored locally on your device.</p>
+          </GlassCard>
+          <GlassCard>
+            <h3 className="font-semibold text-lg">Explainable</h3>
+            <p className="mt-2 text-slate-600">Every day’s status includes the reasoning per Sensiplan rules.</p>
+          </GlassCard>
+        </div>
+      </Section>
+    </>
+  )
 }

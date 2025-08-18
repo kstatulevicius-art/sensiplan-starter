@@ -2,17 +2,70 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Light glass theme */
 :root {
-  --bg: #0b1220;
-  --fg: #e6f0ff;
+  --bg: #f6f9ff;
+  --fg: #0b1220;
+  --muted: #5f6b88;
+  --glass-bg: rgba(255,255,255,0.7);
+  --glass-border: rgba(255,255,255,0.65);
 }
 
+* { box-sizing: border-box; }
 html, body {
-  background: var(--bg);
+  background: radial-gradient(1200px 800px at 10% -10%, #e6f0ff 0%, #f9fbff 50%, #ffffff 100%);
   color: var(--fg);
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100%;
 }
-a { text-decoration: underline; }
-.container { @apply mx-auto max-w-3xl px-6; }
-.card { @apply rounded-2xl bg-white/5 p-6 border border-white/10 shadow; }
-.btn { @apply inline-flex items-center gap-2 rounded-xl px-4 py-2 bg-sky-600 text-white hover:bg-sky-500 transition; }
-.badge { @apply inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold; }
+
+a { text-decoration: none; color: inherit; }
+
+.container { @apply mx-auto max-w-6xl px-6; }
+
+/* Glass UI primitives */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.7) inset,
+    0 10px 30px rgba(16, 24, 40, 0.06);
+  @apply rounded-3xl;
+}
+
+.card { @apply glass p-6 md:p-8; }
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-2.5 font-medium transition;
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+}
+.btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
+.btn.secondary {
+  background: rgba(255,255,255,0.8);
+  color: #0b1220;
+  border: 1px solid rgba(0,0,0,0.05);
+  box-shadow: 0 6px 16px rgba(16, 24, 40, 0.06);
+}
+.badge {
+  @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold;
+  background: rgba(59,130,246,0.12);
+  color: #0b3e9b;
+}
+
+.header-glass {
+  background: rgba(255,255,255,0.6);
+  border-bottom: 1px solid rgba(255,255,255,0.6);
+  backdrop-filter: saturate(180%) blur(12px);
+}
+
+/* Prose tweaks */
+.prose { @apply leading-relaxed; }
+.prose h1 { @apply text-3xl md:text-4xl font-semibold; }
+.prose p { color: var(--muted); }

@@ -1,11 +1,11 @@
-import "./globals.css";
-import Link from "next/link";
-import type { ReactNode } from "react";
+import './globals.css'
+import type { ReactNode } from 'react'
+import Header from '@/components/Header'
 
 export const metadata = {
-  title: "Sensiplan Tracker (Starter)",
-  description: "Website + offline tracker starter"
-};
+  title: 'Sensiplan Tracker (Starter)',
+  description: 'Website + offline tracker starter'
+}
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -22,20 +22,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         `}} />
       </head>
       <body>
-        <header className="container py-6 flex items-center justify-between">
-          <Link href="/" className="text-lg font-semibold">Sensiplan</Link>
-          <nav className="flex gap-4 text-sm">
-            <Link href="/how-it-works">How it works</Link>
-            <Link href="/algorithm">Algorithm</Link>
-            <Link href="/demo">Demo</Link>
-            <Link href="/app" className="btn no-underline">Open App</Link>
-          </nav>
-        </header>
-        <main className="container pb-20">{children}</main>
-        <footer className="container py-10 opacity-70 text-sm">
+        <Header />
+        <main>{children}</main>
+        <footer className="container py-10 text-center text-sm text-slate-500">
           <p>© {new Date().getFullYear()} Sensiplan Starter • Not a medical device</p>
         </footer>
       </body>
     </html>
-  );
+  )
 }
