@@ -1,3 +1,10 @@
+export type CoitusEvent = {
+  at?: string
+  protection?: 'none'|'condom'|'diaphragm'|'withdrawal'|'other'
+  ejaculation?: 'vaginal'|'external'|'unknown'
+  notes?: string
+}
+
 export type Day = {
   id: string
   bleeding: 'none'|'spotting'|'light'|'normal'|'heavy'
@@ -6,6 +13,7 @@ export type Day = {
   bbtDisturbed?: boolean
   mucusSensation: 'none'|'dry'|'moist'|'slippery'
   mucusAppearance: 'none'|'sticky'|'creamy'|'clear'|'stretchy'
+  coitus?: { events: CoitusEvent[] }
 }
 
 export type EngineConfig = { unit: 'C'|'F', earlyInfertile: 'off'|'fixedDay'|'history' }
