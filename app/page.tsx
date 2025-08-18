@@ -10,10 +10,10 @@ export default function Page() {
             <span>Symptothermal • Sensiplan</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-            A beautiful, private way to track fertility
+            A private, elegant way to track fertility
           </h1>
           <p className="mt-4 text-lg text-slate-600">
-            Glass-smooth UI, offline-first, and evidence-based rules. Your data stays with you.
+            Clean design, offline-first, and evidence-based rules. Your data stays with you.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/app" className="btn">Open Tracker</Link>
@@ -25,8 +25,8 @@ export default function Page() {
       <Section>
         <div className="grid md:grid-cols-3 gap-5">
           <GlassCard>
-            <h3 className="font-semibold text-lg">Glass UI</h3>
-            <p className="mt-2 text-slate-600">Modern liquid-glass cards and soft shadows, readable in daylight.</p>
+            <h3 className="font-semibold text-lg">Beautiful & Fast</h3>
+            <p className="mt-2 text-slate-600">Modern cards, soft shadows, readable in daylight.</p>
           </GlassCard>
           <GlassCard>
             <h3 className="font-semibold text-lg">Offline-first</h3>
