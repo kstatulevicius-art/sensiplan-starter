@@ -16,37 +16,37 @@ function mucusLevel(d: Day){
 type Marker = { flags?: Record<string, boolean>, refWindowMax?: number, cycleDay?: number }
 
 export default function ChartSensiplan({ days, markers, axisMode }:{ days: Day[], markers: Record<string, Marker>, axisMode:'calendar'|'cycle' }){
-  const data = days.map(d => ({
-    id: d.id,
-    x: markers[d.id]?.cycleDay ?? null, // numeric cycle day (may be null)
-    label: d.id,                         // calendar date string
-    bbt: d.bbt ?? null,
-    mucus: mucusLevel(d),
-    peak: markers[d.id]?.flags?.peak ?? false,
-    p3: markers[d.id]?.flags?.pPlus3 ?? false,
-    shift: markers[d.id]?.flags?.tempShiftConfirmed ?? false,
-  }))
+  // Build rows with a string xLabel to keep XAxis categorical and stable
+  const data = days.map(d => {
+    const cd = markers[d.id]?.cycleDay
+    const xLabel = axisMode === 'calendar' || !cd ? d.id : `CD${cd}`
+    return {
+      id: d.id,
+      xLabel,
+      bbt: d.bbt ?? null,
+      mucus: mucusLevel(d),
+      peak: markers[d.id]?.flags?.peak ?? false,
+      p3: markers[d.id]?.flags?.pPlus3 ?? false,
+      shift: markers[d.id]?.flags?.tempShiftConfirmed ?? false,
+      cd,
+    }
+  })
 
-  // Fertile window start/end indices based on mucus + markers
+  // Fertile window indices
   const fertileStartIndex = data.findIndex(d => d.mucus > 0)
   const p3Index = data.findIndex(d => d.p3)
   const shiftIndex = data.findIndex(d => d.shift)
   const fertileEndIndex = Math.max(p3Index, shiftIndex)
 
-  // Fallback: if cycle x-values missing while in 'cycle' mode, use calendar to avoid Recharts invariants
-  const cycleXMissing = axisMode==='cycle' && data.some(d => d.x === null || d.x === undefined)
-  const effectiveAxisMode: 'calendar'|'cycle' = cycleXMissing ? 'calendar' : axisMode
-  const xKey: 'label'|'x' = effectiveAxisMode==='calendar' ? 'label' : 'x'
-
   const refArea = (fertileStartIndex !== -1 && fertileEndIndex !== -1 && fertileEndIndex > fertileStartIndex)
-    ? { x1: data[fertileStartIndex][xKey], x2: data[fertileEndIndex][xKey] }
+    ? { x1: data[fertileStartIndex].xLabel, x2: data[fertileEndIndex].xLabel }
     : null
 
   return (
     <div style={{ width: '100%', height: 360 }}>
       <ResponsiveContainer>
         <ComposedChart data={data} margin={{ left: 12, right: 12, top: 10, bottom: 10 }}>
-          <XAxis dataKey={xKey} tick={{ fontSize: 10 }} />
+          <XAxis dataKey="xLabel" tick={{ fontSize: 10 }} />
           <YAxis yAxisId="temp" domain={['dataMin - 0.2', 'dataMax + 0.2']} tick={{ fontSize: 10 }} />
           <YAxis yAxisId="mucus" hide domain={[0,3]} />
           <Tooltip formatter={(value, name)=>{
@@ -55,14 +55,14 @@ export default function ChartSensiplan({ days, markers, axisMode }:{ days: Day[]
             return [value, name]
           }} labelFormatter={(lab, payload:any)=>{
             const p = Array.isArray(payload) && payload[0] ? payload[0].payload : null
-            const cd = p?.x ? ` • CD${p.x}` : ''
-            return effectiveAxisMode==='calendar' ? `${lab}${cd}` : `CD${lab}${p?.label ? ' • '+p.label : ''}`
+            const extra = p?.cd ? ` • ${p.id}` : ''
+            return `${lab}${extra}`
           }} />
           {refArea && (<ReferenceArea x1={refArea.x1 as any} x2={refArea.x2 as any} y1={0} y2={1} ifOverflow="extendDomain" />)}
           <Bar yAxisId="mucus" dataKey="mucus" barSize={10} />
           <Line yAxisId="temp" type="monotone" dataKey="bbt" dot={false} />
-          {data.map((d, i) => d.peak ? <ReferenceLine key={`peak-${i}`} x={d[xKey] as any} strokeDasharray="4 4" /> : null)}
-          {data.map((d, i) => d.shift ? <ReferenceLine key={`shift-${i}`} x={d[xKey] as any} strokeDasharray="4 4" /> : null)}
+          {data.map((d, i) => d.peak ? <ReferenceLine key={`peak-${i}`} x={d.xLabel as any} strokeDasharray="4 4" /> : null)}
+          {data.map((d, i) => d.shift ? <ReferenceLine key={`shift-${i}`} x={d.xLabel as any} strokeDasharray="4 4" /> : null)}
         </ComposedChart>
       </ResponsiveContainer>
     </div>
