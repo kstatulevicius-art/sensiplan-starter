@@ -33,7 +33,13 @@ export default function ChartSensiplan({ days, markers, axisMode }:{ days: Day[]
   const shiftIndex = data.findIndex(d => d.shift)
   const fertileEndIndex = Math.max(p3Index, shiftIndex)
 
-  const xKey = axisMode==='calendar' ? 'label' : 'x'
+  
+  // Fallback: if cycle x-values are missing, render with calendar axis to avoid chart invariant errors
+  const cycleXMissing = axisMode==='cycle' && data.some(d => d.x === null || d.x === undefined)
+  const effectiveAxisMode = cycleXMissing ? 'calendar' : axisMode
+  const xKey = effectiveAxisMode==='calendar' ? 'label' : 'x'
+
+  const xKey = effectiveAxisMode==='calendar' ? 'label' : 'x'
   const refArea = (fertileStartIndex !== -1 && fertileEndIndex !== -1 && fertileEndIndex > fertileStartIndex)
     ? { x1: data[fertileStartIndex][xKey as 'label'|'x'], x2: data[fertileEndIndex][xKey as 'label'|'x'] }
     : null
@@ -52,7 +58,7 @@ export default function ChartSensiplan({ days, markers, axisMode }:{ days: Day[]
           }} labelFormatter={(lab, payload:any)=>{
             const p = Array.isArray(payload) && payload[0] ? payload[0].payload : null
             const cd = p?.x ? ` • CD${p.x}` : ''
-            return axisMode==='calendar' ? `${lab}${cd}` : `CD${lab}${p?.label ? ' • '+p.label : ''}`
+            return effectiveAxisMode==='calendar' ? `${lab}${cd}` : `CD${lab}${p?.label ? ' • '+p.label : ''}`
           }} />
           {refArea && (<ReferenceArea x1={refArea.x1 as any} x2={refArea.x2 as any} y1={0} y2={1} ifOverflow="extendDomain" />)}
           <Bar yAxisId="mucus" dataKey="mucus" barSize={10} />
