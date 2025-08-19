@@ -16,7 +16,7 @@ function mucusLevel(d: Day){
 type Marker = { flags?: Record<string, boolean>, refWindowMax?: number, cycleDay?: number }
 
 export default function ChartSensiplan({ days, markers, axisMode }:{ days: Day[], markers: Record<string, Marker>, axisMode:'calendar'|'cycle' }){
-  // Build rows with a string xLabel to keep XAxis categorical and stable
+  // Build rows with a string xLabel to keep XAxis categorical && stable
   const data = days.map(d => {
     const cd = markers[d.id]?.cycleDay
     const xLabel = axisMode === 'calendar' || !cd ? d.id : `CD${cd}`
@@ -38,9 +38,16 @@ export default function ChartSensiplan({ days, markers, axisMode }:{ days: Day[]
   const shiftIndex = data.findIndex(d => d.shift)
   const fertileEndIndex = Math.max(p3Index, shiftIndex)
 
-  const refArea = (fertileStartIndex !== -1 && fertileEndIndex !== -1 && fertileEndIndex > fertileStartIndex)
+  const refAreaRaw = (fertileStartIndex !== -1 && fertileEndIndex !== -1 && fertileEndIndex > fertileStartIndex)
     ? { x1: data[fertileStartIndex].xLabel, x2: data[fertileEndIndex].xLabel }
     : null
+
+  const domain = new Set(data.map(d => d.xLabel))
+  const refArea = (refAreaRaw && domain.has(refAreaRaw.x1) && domain.has(refAreaRaw.x2)) ? refAreaRaw : null
+
+  if (data.length === 0) {
+    return <div style={{height:360}} className="flex items-center justify-center text-sm text-slate-500">No data</div>
+  }
 
   return (
     <div style={{ width: '100%', height: 360 }}>
@@ -61,8 +68,8 @@ export default function ChartSensiplan({ days, markers, axisMode }:{ days: Day[]
           {refArea && (<ReferenceArea x1={refArea.x1 as any} x2={refArea.x2 as any} y1={0} y2={1} ifOverflow="extendDomain" />)}
           <Bar yAxisId="mucus" dataKey="mucus" barSize={10} />
           <Line yAxisId="temp" type="monotone" dataKey="bbt" dot={false} />
-          {data.map((d, i) => d.peak ? <ReferenceLine key={`peak-${i}`} x={d.xLabel as any} strokeDasharray="4 4" /> : null)}
-          {data.map((d, i) => d.shift ? <ReferenceLine key={`shift-${i}`} x={d.xLabel as any} strokeDasharray="4 4" /> : null)}
+          {data.map((d, i) => d.peak && domain.has(d.xLabel) ? <ReferenceLine key={`peak-${i}`} x={d.xLabel as any} strokeDasharray="4 4" /> : null)}
+          {data.map((d, i) => d.shift && domain.has(d.xLabel) ? <ReferenceLine key={`shift-${i}`} x={d.xLabel as any} strokeDasharray="4 4" /> : null)}
         </ComposedChart>
       </ResponsiveContainer>
     </div>

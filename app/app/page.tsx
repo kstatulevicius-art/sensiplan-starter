@@ -2,8 +2,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { runSensiplan, type Day } from '@/lib/engine'
 import { db, type Day as DbDay, type CoitusEvent } from '@/lib/db'
-import ChartSensiplan from './ChartSensiplan'
-import ChartBBT from './ChartBBT'
+import dynamic from 'next/dynamic'
+const ChartSensiplan = dynamic(() => import('./ChartSensiplan'), { ssr: false })
+const ChartBBT = dynamic(() => import('./ChartBBT'), { ssr: false })
 import { Section, GlassCard } from '@/components/Glass'
 import SettingsDemo from './SettingsDemo'
 import ChartModeToggle from './ChartModeToggle'
