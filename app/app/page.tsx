@@ -3,7 +3,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { runSensiplan, type Day } from '@/lib/engine'
 import { db, type Day as DbDay, type CoitusEvent } from '@/lib/db'
 import ChartSensiplan from './ChartSensiplan'
+import ChartBBT from './ChartBBT'
 import { Section, GlassCard } from '@/components/Glass'
+import ChartModeToggle from './ChartModeToggle'
 import CalendarToggle from './CalendarToggle'
 import MonthGrid from './calendar/MonthGrid'
 import WeekStrip from './calendar/WeekStrip'
@@ -14,6 +16,7 @@ type Entry = Day
 function todayId(){ const d = new Date(); const p=(n:number)=> String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}` }
 
 export default function Tracker() {
+  const [chartMode, setChartMode] = useState<'classic'|'enhanced'>(() => (typeof window!=='undefined' && (localStorage.getItem('chartMode') as any)) || 'classic')
   const [entries, setEntries] = useState<Entry[]>([])
   const [calendarMode, setCalendarMode] = useState<'month'|'week'>(() => (typeof window!=='undefined' && localStorage.getItem('calMode') as any) || 'month')
   const [selectedId, setSelectedId] = useState<string>(() => todayId())
@@ -34,6 +37,8 @@ export default function Tracker() {
 
   // Persist mode
   useEffect(() => { if (typeof window!=='undefined') localStorage.setItem('calMode', calendarMode) }, [calendarMode])
+
+  useEffect(() => { if (typeof window!=='undefined') localStorage.setItem('chartMode', chartMode) }, [chartMode])
 
   // Update form when selected day changes
   useEffect(() => {
@@ -169,8 +174,14 @@ export default function Tracker() {
 
       <Section>
         <GlassCard>
-          <h2 className="text-xl font-semibold mb-3">Chart</h2>
-          <ChartSensiplan days={entries} markers={out.markers} />
+          <div className="flex items-center justify-between mb-3"><h2 className="text-xl font-semibold">Chart</h2><ChartModeToggle mode={chartMode} setMode={setChartMode} /></div>
+          {chartMode==='classic' ? (
+            <ChartSensiplan days={entries} markers={out.markers} />
+          ) : (
+            <div>
+              <ChartBBT days={entries} markers={out.markers as any} />
+            </div>
+          )}
           <div className="text-xs text-slate-500 mt-3">
             Red line = BBT • Blue bars = mucus quality • Green band = fertile window • Dashed lines = Peak / Temp shift
           </div>
