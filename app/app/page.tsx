@@ -5,6 +5,7 @@ import { db, type Day as DbDay, type CoitusEvent } from '@/lib/db'
 import ChartSensiplan from './ChartSensiplan'
 import ChartBBT from './ChartBBT'
 import { Section, GlassCard } from '@/components/Glass'
+import SettingsDemo from './SettingsDemo'
 import ChartModeToggle from './ChartModeToggle'
 import CalendarToggle from './CalendarToggle'
 import MonthGrid from './calendar/MonthGrid'
@@ -26,6 +27,9 @@ export default function Tracker() {
   const [mucusAppearance, setMA] = useState<'none'|'sticky'|'creamy'|'clear'|'stretchy'>('none')
   const [bleeding, setBleeding] = useState<'none'|'spotting'|'light'|'normal'|'heavy'>('none')
   const [coitusEvents, setCoitusEvents] = useState<CoitusEvent[]>([])
+  const [notes, setNotes] = useState<string>('')
+  const [lifestyle, setLifestyle] = useState<any>({})
+  const [axisMode, setAxisMode] = useState<'calendar'|'cycle'>(() => (typeof window!=='undefined' && (localStorage.getItem('axisMode') as any)) || 'calendar')
 
   // Load from IndexedDB
   useEffect(() => {
@@ -40,6 +44,8 @@ export default function Tracker() {
 
   useEffect(() => { if (typeof window!=='undefined') localStorage.setItem('chartMode', chartMode) }, [chartMode])
 
+  useEffect(()=>{ if (typeof window!=='undefined') localStorage.setItem('axisMode', axisMode) }, [axisMode])
+
   // Update form when selected day changes
   useEffect(() => {
     const found = entries.find(e => e.id === selectedId)
@@ -48,26 +54,41 @@ export default function Tracker() {
     setMA(found?.mucusAppearance ?? 'none')
     setBleeding(found?.bleeding ?? 'none')
     setCoitusEvents(found?.coitus?.events ?? [])
+    setNotes(found?.notes ?? '')
+    setLifestyle(found?.lifestyle ?? {})
   }, [selectedId, entries])
+
+  async function refreshEntries(){
+    const ds = await db.days.toArray()
+    setEntries(ds.sort((a,b)=> a.id.localeCompare(b.id)) as Entry[])
+  }
 
   const out = useMemo(() => runSensiplan(entries, { unit:'C', earlyInfertile:'off' }), [entries])
   const selectedMarker = out.markers[selectedId]
   const status = selectedMarker?.state ?? 'USE_CAUTION'
 
+  // Status background hues
+  const marker = out.markers[selectedId]
+  const insufficient = marker?.insufficientData
+  const bgClass = insufficient ? 'bg-orange-50' : (marker?.state==='INFERTILE' ? 'bg-blue-50' : (marker?.state==='FERTILE' ? 'bg-emerald-50' : (bleeding!=='none' ? 'bg-red-50' : 'bg-orange-50')))
+
+
   // Build status map for calendar
-  const statusMap: Record<string, { filled:boolean, bleeding:any, state:any, hasCoitus:boolean }> = {}
+  const statusMap: Record<string, { filled:boolean, bleeding:any, state:any, hasCoitus:boolean, hasFertileMucus:boolean, hasLifestyle:boolean }> = {}
   for (const d of entries) {
     statusMap[d.id] = {
       filled: true,
       bleeding: d.bleeding,
       state: out.markers[d.id]?.state ?? 'USE_CAUTION',
-      hasCoitus: !!(d.coitus?.events?.length)
+      hasCoitus: !!(d.coitus?.events?.length),
+      hasFertileMucus: (d.mucusSensation==='slippery' || d.mucusAppearance==='clear' || d.mucusAppearance==='stretchy'),
+      hasLifestyle: !!(d.lifestyle && Object.keys(d.lifestyle).length)
     }
   }
 
   async function saveSelected() {
     const id = selectedId
-    const entry: Entry = { id, bleeding, mucusSensation, mucusAppearance, bbt: temp ? parseFloat(temp) : undefined, coitus: { events: coitusEvents } }
+    const entry: Entry = { id, bleeding, mucusSensation, mucusAppearance, bbt: temp ? parseFloat(temp) : undefined, coitus: { events: coitusEvents }, notes, lifestyle, bbtDisturbed: !!(lifestyle?.illness || lifestyle?.alcohol || lifestyle?.travel || lifestyle?.sleepQuality==='poor' || lifestyle?.exercise==='intense') }
     await db.days.put(entry as DbDay)
     const ds = await db.days.toArray()
     setEntries(ds.sort((a,b)=> a.id.localeCompare(b.id)) as Entry[])
@@ -83,7 +104,7 @@ export default function Tracker() {
   const monthTitle = monthCursor.toLocaleDateString(undefined, { month:'long', year:'numeric' })
 
   return (
-    <>
+    <div className={bgClass + ' transition-colors duration-300 min-h-[40vh]'}>
       <Section className="pt-6">
         <div className="text-center mb-6">
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Tracker</h1>
@@ -112,7 +133,6 @@ export default function Tracker() {
           }
         </GlassCard>
       </Section>
-
       <Section>
         <div className="grid gap-6 md:grid-cols-2">
           <GlassCard>
@@ -142,6 +162,24 @@ export default function Tracker() {
               </label>
               <button className="btn md:col-span-2" type="submit">Save</button>
             </form>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div className="glass p-3 rounded-xl">
+              <div className="text-sm font-medium mb-2">Notes</div>
+              <textarea className="w-full glass p-2 rounded-lg min-h-[72px]" placeholder="ill, travel, alcohol..." value={notes} onChange={e=>setNotes(e.target.value)} />
+            </div>
+            <div className="glass p-3 rounded-xl">
+              <div className="text-sm font-medium mb-2">Lifestyle & Health</div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <label className="inline-flex items-center gap-2"><input type="checkbox" checked={!!lifestyle.illness} onChange={e=>setLifestyle({...lifestyle, illness:e.target.checked})}/>Illness</label>
+                <label className="inline-flex items-center gap-2"><input type="checkbox" checked={!!lifestyle.alcohol} onChange={e=>setLifestyle({...lifestyle, alcohol:e.target.checked})}/>Alcohol</label>
+                <label className="inline-flex items-center gap-2"><input type="checkbox" checked={!!lifestyle.travel} onChange={e=>setLifestyle({...lifestyle, travel:e.target.checked})}/>Travel</label>
+                <label className="inline-flex items-center gap-2">Stress<select className="glass ml-2 px-2 py-1" value={lifestyle.stress ?? 'none'} onChange={e=>setLifestyle({...lifestyle, stress:e.target.value})}><option>none</option><option>low</option><option>moderate</option><option>high</option></select></label>
+                <label className="inline-flex items-center gap-2">Sleep<select className="glass ml-2 px-2 py-1" value={lifestyle.sleepQuality ?? 'ok'} onChange={e=>setLifestyle({...lifestyle, sleepQuality:e.target.value})}><option>poor</option><option>ok</option><option>good</option></select></label>
+                <label className="inline-flex items-center gap-2">Exercise<select className="glass ml-2 px-2 py-1" value={lifestyle.exercise ?? 'none'} onChange={e=>setLifestyle({...lifestyle, exercise:e.target.value})}><option>none</option><option>light</option><option>moderate</option><option>intense</option></select></label>
+              </div>
+              <div className="text-xs text-slate-500 mt-2">Temps auto-marked disturbed if illness, alcohol, travel, poor sleep, or intense exercise.</div>
+            </div>
+          </div>
           </GlassCard>
 
           <GlassCard>
@@ -171,12 +209,11 @@ export default function Tracker() {
           </GlassCard>
         </div>
       </Section>
-
       <Section>
         <GlassCard>
-          <div className="flex items-center justify-between mb-3"><h2 className="text-xl font-semibold">Chart</h2><ChartModeToggle mode={chartMode} setMode={setChartMode} /></div>
+          <div className="flex items-center justify-between mb-3"><h2 className="text-xl font-semibold">Chart</h2><div className='flex gap-2'><AxisModeToggle mode={axisMode} setMode={setAxisMode} /><ChartModeToggle mode={chartMode} setMode={setChartMode} /></div></div>
           {chartMode==='classic' ? (
-            <ChartSensiplan days={entries} markers={out.markers} />
+            <ChartSensiplan days={entries} markers={out.markers} axisMode={axisMode} />
           ) : (
             <div>
               <ChartBBT days={entries} markers={out.markers as any} />
@@ -187,7 +224,6 @@ export default function Tracker() {
           </div>
         </GlassCard>
       </Section>
-
       <Section>
         <GlassCard>
           <h2 className="text-xl font-semibold mb-2">Decision details for {selectedId}</h2>
@@ -195,7 +231,14 @@ export default function Tracker() {
             {(out.markers[selectedId]?.explanations ?? ['No specific markers for this day.']).map((e,i)=> <div key={i}>• {e}</div>)}
           </div>
         </GlassCard>
+      
+      <Section>
+        <GlassCard>
+          <h2 className="text-xl font-semibold mb-3">Settings</h2>
+          <SettingsDemo onAfterChange={refreshEntries} />
+        </GlassCard>
       </Section>
-    </>
+</Section>
+      </div>
   )
 }
