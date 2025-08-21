@@ -1,0 +1,21 @@
+// In app/app/page.tsx, update Segmented usages like so:
+// BEFORE:
+//   <Segmented value={calendarMode} onChange={setCalendarMode} options={[{value:'month',label:'Month'},{value:'week',label:'Week'}]} />
+// AFTER:
+/*
+  <Segmented
+    value={calendarMode}
+    onChange={(v)=>setCalendarMode(v as 'month'|'week')}
+    options={[{value:'month',label:'Month'},{value:'week',label:'Week'}]}
+  />
+  <Segmented
+    value={axisMode}
+    onChange={(v)=>setAxisMode(v as 'calendar'|'cycle')}
+    options={[{value:'calendar',label:'Calendar'},{value:'cycle',label:'Cycle'}]}
+  />
+  <Segmented
+    value={chartMode}
+    onChange={(v)=>setChartMode(v as 'classic'|'enhanced')}
+    options={[{value:'classic',label:'Classic'},{value:'enhanced',label:'Enhanced'}]}
+  />
+*/
