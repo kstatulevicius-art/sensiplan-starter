@@ -1,71 +1,49 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Light glass theme */
-:root {
-  --bg: #f6f9ff;
-  --fg: #0b1220;
-  --muted: #5f6b88;
-  --glass-bg: rgba(255,255,255,0.7);
-  --glass-border: rgba(255,255,255,0.65);
+/* --- Global safety & layout guards --- */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Keep media responsive */
+img, svg, video, canvas { display: block; max-width: 100%; height: auto; }
+
+/* Prevent layout overflow from long content */
+.app-container { min-width: 0; }
+section, .glass, .card { min-width: 0; }
+
+/* Inputs & buttons should never overflow their parent */
+input, select, textarea, button {
+  max-width: 100%;
+  min-width: 0;
+}
+/* Make form controls block-level by default inside grids to avoid overflow */
+form input, form select, form textarea, form button {
+  width: 100%;
 }
 
-* { box-sizing: border-box; }
-html, body {
-  background: radial-gradient(1200px 800px at 10% -10%, #e6f0ff 0%, #f9fbff 50%, #ffffff 100%);
-  color: var(--fg);
-  font-synthesis-weight: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  min-height: 100%;
-}
-
-a { text-decoration: none; color: inherit; }
-
-.container { @apply mx-auto max-w-6xl px-6; }
-
-/* Glass UI primitives */
+/* Glass cards: ensure clipping and consistent radius */
 .glass {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: saturate(180%) blur(14px);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.7) inset,
-    0 10px 30px rgba(16, 24, 40, 0.06);
-  @apply rounded-3xl;
+  @apply rounded-xl overflow-hidden;
 }
 
-.card { @apply glass p-6 md:p-8; }
-
+/* Button base (non-intrusive if you already have .btn from components) */
 .btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-2.5 font-medium transition;
-  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+  @apply inline-flex items-center justify-center px-3 py-2 rounded-xl bg-slate-900 text-white text-sm;
 }
-.btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
 .btn.secondary {
-  background: rgba(255,255,255,0.8);
-  color: #0b1220;
-  border: 1px solid rgba(0,0,0,0.05);
-  box-shadow: 0 6px 16px rgba(16, 24, 40, 0.06);
+  @apply bg-white text-slate-800 border border-black/10;
 }
 .badge {
-  @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold;
-  background: rgba(59,130,246,0.12);
-  color: #0b3e9b;
+  @apply inline-block px-2 py-0.5 rounded-lg text-xs bg-black/5;
 }
 
-.header-glass {
-  background: rgba(255,255,255,0.6);
-  border-bottom: 1px solid rgba(255,255,255,0.6);
-  backdrop-filter: saturate(180%) blur(12px);
+/* Ensure grid cards align neatly */
+.grid { align-items: stretch; }
+@media (min-width: 768px) {
+  .md\:grid-cols-2 > * { min-width: 0; }
 }
 
-/* Prose tweaks */
-.prose { @apply leading-relaxed; }
-.prose h1 { @apply text-3xl md:text-4xl font-semibold; }
-.prose p { color: var(--muted); }
+/* Small tweaks for calendar buttons so they don't shift layout */
+button.btn.secondary { white-space: nowrap; }
