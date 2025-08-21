@@ -2,25 +2,19 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
-
 import { runSensiplan, type Day as EngineDay } from '@/lib/engine'
 import { db, type Day as DbDay, type CoitusEvent } from '@/lib/db'
-
 import { Section, GlassCard } from '@/components/Glass'
 import CalendarToggle from './CalendarToggle'
 import ChartModeToggle from './ChartModeToggle'
 import AxisModeToggle from './AxisModeToggle'
 import ChartErrorBoundary from './ChartErrorBoundary'
-
 import MonthGrid from './calendar/MonthGrid'
 import WeekStrip from './calendar/WeekStrip'
 import { fromId, toId, addMonths } from './calendar/utils'
-
 import SettingsDemo from './SettingsDemo'
 
-// Charts (client-only)
-const ChartSensiplan = dynamic(() => import('./ChartSensiplan'), { ssr: false })
-const ChartBBT = dynamic(() => import('./ChartBBT'), { ssr: false })
+const ChartSensiplan = dynamic(() => import('./ChartSensiplanSVG'), { ssr: false })
 
 type Entry = EngineDay
 
@@ -47,20 +41,14 @@ export default function Tracker(){
   const [notes, setNotes] = useState<string>('')
   const [lifestyle, setLifestyle] = useState<any>({})
 
-  // Load from IndexedDB
   useEffect(() => {
-    db.days.toArray().then(ds => {
-      const sorted = ds.sort((a,b)=> a.id.localeCompare(b.id))
-      setEntries(sorted as Entry[])
-    })
+    db.days.toArray().then(ds => setEntries(ds.sort((a,b)=> a.id.localeCompare(b.id)) as Entry[]))
   }, [])
 
-  // Persist preferences
   useEffect(() => { if (typeof window!=='undefined') localStorage.setItem('calMode', calendarMode) }, [calendarMode])
   useEffect(() => { if (typeof window!=='undefined') localStorage.setItem('chartMode', chartMode) }, [chartMode])
   useEffect(() => { if (typeof window!=='undefined') localStorage.setItem('axisMode', axisMode) }, [axisMode])
 
-  // Update form when selected day changes
   useEffect(() => {
     const found = entries.find(e => e.id === selectedId)
     setTemp(found?.bbt?.toString() ?? '')
@@ -76,7 +64,6 @@ export default function Tracker(){
   const selectedMarker = out.markers[selectedId]
   const status = selectedMarker?.state ?? 'USE_CAUTION'
 
-  // Build status map for calendar
   const statusMap: Record<string, { filled:boolean, bleeding:any, state:'FERTILE'|'INFERTILE'|'USE_CAUTION', hasCoitus:boolean, hasFertileMucus:boolean, hasLifestyle:boolean }> = {}
   for (const d of entries) {
     statusMap[d.id] = {
@@ -108,20 +95,14 @@ export default function Tracker(){
       bbtDisturbed: !!(lifestyle?.illness || lifestyle?.alcohol || lifestyle?.travel || lifestyle?.sleepQuality==='poor' || lifestyle?.exercise==='intense')
     }
     await db.days.put(entry as DbDay)
-    const ds = await db.days.toArray()
-    setEntries(ds.sort((a,b)=> a.id.localeCompare(b.id)) as Entry[])
+    await refreshEntries()
   }
 
-  function addCoitus(preset: CoitusEvent){
-    setCoitusEvents(prev => [...prev, preset])
-  }
-  function removeCoitus(index: number){
-    setCoitusEvents(prev => prev.filter((_,i)=> i!==index))
-  }
+  function addCoitus(preset: CoitusEvent){ setCoitusEvents(prev => [...prev, preset]) }
+  function removeCoitus(index: number){ setCoitusEvents(prev => prev.filter((_,i)=> i!==index)) }
 
   const monthTitle = monthCursor.toLocaleDateString(undefined, { month:'long', year:'numeric' })
 
-  // Status background hues
   const marker = out.markers[selectedId]
   const insufficient = marker?.insufficientData
   const bgClass = insufficient ? 'bg-orange-50' : (marker?.state==='INFERTILE' ? 'bg-blue-50' : (marker?.state==='FERTILE' ? 'bg-emerald-50' : (bleeding!=='none' ? 'bg-red-50' : 'bg-orange-50')))
@@ -246,13 +227,7 @@ export default function Tracker(){
             </div>
           </div>
           <ChartErrorBoundary>
-            {chartMode==='classic' ? (
-              <ChartSensiplan days={entries} markers={out.markers} axisMode={axisMode} />
-            ) : (
-              <div>
-                <ChartBBT days={entries} markers={out.markers as any} />
-              </div>
-            )}
+            <ChartSensiplan days={entries} markers={out.markers} axisMode={axisMode} />
           </ChartErrorBoundary>
           <div className="text-xs text-slate-500 mt-3">
             Red line = BBT • Blue bars = mucus quality • Green band = fertile window • Dashed lines = Peak / Temp shift

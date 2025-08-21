@@ -1,3 +1,3 @@
-// Next.js TypeScript declarations
 /// <reference types="next" />
+/// <reference types="next/types/global" />
 /// <reference types="next/image-types/global" />

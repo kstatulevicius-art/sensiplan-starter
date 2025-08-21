@@ -1,49 +1,17 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* --- Global safety & layout guards --- */
 *, *::before, *::after { box-sizing: border-box; }
-
-/* Keep media responsive */
 img, svg, video, canvas { display: block; max-width: 100%; height: auto; }
-
-/* Prevent layout overflow from long content */
 .app-container { min-width: 0; }
 section, .glass, .card { min-width: 0; }
-
-/* Inputs & buttons should never overflow their parent */
-input, select, textarea, button {
-  max-width: 100%;
-  min-width: 0;
-}
-/* Make form controls block-level by default inside grids to avoid overflow */
-form input, form select, form textarea, form button {
-  width: 100%;
-}
-
-/* Glass cards: ensure clipping and consistent radius */
-.glass {
-  @apply rounded-xl overflow-hidden;
-}
-
-/* Button base (non-intrusive if you already have .btn from components) */
-.btn {
-  @apply inline-flex items-center justify-center px-3 py-2 rounded-xl bg-slate-900 text-white text-sm;
-}
-.btn.secondary {
-  @apply bg-white text-slate-800 border border-black/10;
-}
-.badge {
-  @apply inline-block px-2 py-0.5 rounded-lg text-xs bg-black/5;
-}
-
-/* Ensure grid cards align neatly */
+input, select, textarea, button { max-width: 100%; min-width: 0; }
+form input, form select, form textarea, form button { width: 100%; }
+.glass { @apply rounded-xl overflow-hidden; }
+.btn { @apply inline-flex items-center justify-center px-3 py-2 rounded-xl bg-slate-900 text-white text-sm; }
+.btn.secondary { @apply bg-white text-slate-800 border border-black/10; }
+.badge { @apply inline-block px-2 py-0.5 rounded-lg text-xs bg-black/5; }
 .grid { align-items: stretch; }
-@media (min-width: 768px) {
-  .md\:grid-cols-2 > * { min-width: 0; }
-}
-
-/* Small tweaks for calendar buttons so they don't shift layout */
+@media (min-width: 768px) { .md\:grid-cols-2 > * { min-width: 0; } }
 button.btn.secondary { white-space: nowrap; }

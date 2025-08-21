@@ -1,3 +1,4 @@
+'use client'
 import Dexie, { Table } from 'dexie'
 
 export interface CoitusEvent {
@@ -35,7 +36,6 @@ export class SensiDB extends Dexie {
   meta!: Table<{key:string, value:string}, string>;
   constructor() {
     super('sensiplan-db')
-    // v1 -> base; v2 -> coitus; v3 -> lifestyle + notes
     this.version(3).stores({
       days: 'id',
       meta: 'key'

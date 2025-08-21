@@ -19,7 +19,6 @@ export default function SettingsDemo({ onAfterChange }:{ onAfterChange: ()=>void
     if (busy) return
     setBusy(true)
     try {
-      // Seed starting 27 days before today (28-day window ending today)
       const now = new Date()
       const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 27)
       await seedDemoCycle({ y:start.getFullYear(), m:start.getMonth()+1, d:start.getDate() }, selected)

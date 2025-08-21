@@ -51,11 +51,10 @@ function isFQM(d: Day){ return d.mucusSensation === 'slippery' || d.mucusAppeara
 function noFQM(d: Day){ return !isFQM(d) }
 
 export function runSensiplan(days: Day[], cfg: EngineConfig): EngineOutput {
-  // Sort by date id (yyyy-mm-dd)
   const ds = [...days].sort((a,b)=> a.id.localeCompare(b.id))
   const markers: Record<string, DerivedMarkers> = {}
 
-  // ---- Cycle grouping (CD1 = first heavy/normal bleeding after a non-heavy day) ----
+  // Cycle grouping
   const cycles: Array<{ id: string, startId: string, endId?: string, length?: number }> = []
   let currentCycleStart: string | null = null
   let lastWasHeavy = false
@@ -63,7 +62,6 @@ export function runSensiplan(days: Day[], cfg: EngineConfig): EngineOutput {
     const d = ds[i]
     const heavyToday = (d.bleeding==='heavy' || d.bleeding==='normal')
     if (heavyToday && !lastWasHeavy){
-      // new cycle
       if (currentCycleStart){
         const prev = cycles[cycles.length-1]
         prev.endId = ds[i-1]?.id
@@ -75,7 +73,6 @@ export function runSensiplan(days: Day[], cfg: EngineConfig): EngineOutput {
     lastWasHeavy = heavyToday
     const cycleId = currentCycleStart ?? (ds[0]?.id ?? 'unknown')
     const cycleDay = currentCycleStart ? (dateDiff(currentCycleStart, d.id)+1) : (i+1)
-    // write preliminary marker with cycle info
     markers[d.id] = { state: 'USE_CAUTION', cycleId, cycleDay }
   }
   if (cycles.length){
@@ -84,7 +81,7 @@ export function runSensiplan(days: Day[], cfg: EngineConfig): EngineOutput {
     last.length = last.endId ? (dateDiff(last.startId, last.endId)+1) : undefined
   }
 
-  // ---- Temperature shift (3-over-6 +0.2C safeguard) ----
+  // Temperature shift (3-over-6 with 0.2°C safeguard)
   const validBBT = (i:number)=> isValidBBT(ds[i]) ? (cfg.unit==='C' ? ds[i].bbt! : toCelsius(ds[i].bbt!, 'F')) : undefined
   function lastSixValidBefore(i:number){
     const arr:number[] = []
@@ -113,7 +110,7 @@ export function runSensiplan(days: Day[], cfg: EngineConfig): EngineOutput {
     }
   }
 
-  // ---- Mucus Peak and P+3 ----
+  // Mucus Peak and P+3
   let peakIdx: number | null = null
   let pPlus3Idx: number | null = null
   let lastFqmIndex: number | null = null
@@ -126,13 +123,11 @@ export function runSensiplan(days: Day[], cfg: EngineConfig): EngineOutput {
     }
   }
 
-  // ---- End of fertile phase ----
   let endFertileIdx: number | null = null
   if(tempShiftIdx!==null && pPlus3Idx!==null){
     endFertileIdx = Math.max(tempShiftIdx, pPlus3Idx)
   }
 
-  // ---- Assign states + confidence + insufficient data ----
   const tempCount = ds.filter(d=> typeof d.bbt==='number').length
   const mucusCount = ds.filter(d=> d.mucusSensation!=='none' || d.mucusAppearance!=='none').length
   const insufficient = (tempCount < 6) || (mucusCount === 0)
@@ -146,18 +141,16 @@ export function runSensiplan(days: Day[], cfg: EngineConfig): EngineOutput {
     if(pPlus3Idx!==null && i===pPlus3Idx) { flags['pPlus3'] = true; explanations.push('Third non-fertile mucus day after Peak (P+3)') }
 
     let state: 'INFERTILE'|'FERTILE'|'USE_CAUTION' = 'USE_CAUTION'
-    let postovulSafeFromEvening = false
     let seenAnyMucus = mucusCount > 0
 
     if(endFertileIdx!==null){
       if(i < endFertileIdx){ state = seenAnyMucus ? 'FERTILE' : 'USE_CAUTION' }
-      else if(i === endFertileIdx){ state = 'FERTILE'; postovulSafeFromEvening = true }
+      else if(i === endFertileIdx){ state = 'FERTILE' }
       else { state = 'INFERTILE' }
     } else {
       state = seenAnyMucus ? 'FERTILE' : 'USE_CAUTION'
     }
 
-    // Confidence heuristic
     let conf = 1.0
     if(d.bbtDisturbed) conf -= 0.2
     if(typeof d.bbt!=='number') conf -= 0.1
@@ -166,8 +159,7 @@ export function runSensiplan(days: Day[], cfg: EngineConfig): EngineOutput {
 
     m.flags = flags
     m.explanations = explanations
-    m.refWindowMax = tempShiftRefMax ?? undefined
-    m.postovulSafeFromEvening = postovulSafeFromEvening
+    m.postovulSafeFromEvening = false
     m.confidenceScore = conf
     m.insufficientData = insufficient
     m.state = insufficient ? 'USE_CAUTION' : state
@@ -176,7 +168,6 @@ export function runSensiplan(days: Day[], cfg: EngineConfig): EngineOutput {
   return { markers, cycles }
 }
 
-// YYYY-MM-DD difference in days assuming valid ISO ids
 function dateDiff(aId: string, bId: string){
   const [ay,am,ad] = aId.split('-').map(Number)
   const [by,bm,bd] = bId.split('-').map(Number)

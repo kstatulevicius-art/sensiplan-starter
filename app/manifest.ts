@@ -1,11 +1,9 @@
-
 import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Sensiplan Tracker',
     short_name: 'Sensiplan',
-    description: 'Offline-first symptothermal fertility tracker using Sensiplan rules.',
     start_url: '/app',
     display: 'standalone',
     background_color: '#f8fafc',

@@ -11,7 +11,6 @@ export async function seedDemoCycle(start: {y:number,m:number,d:number}, mode:'t
   const len = 28
   const demoIds: string[] = []
 
-  // Base curves
   const baseTemps = [36.4,36.4,36.5,36.5,36.4,36.5,36.5,36.5,36.6,36.6,36.5,36.5,36.6,36.7,36.8,36.8,36.9,36.9,36.9,36.8,36.9,36.8,36.8,36.7,36.6,36.6,36.5,36.5]
   const mucusS = ['none','none','none','none','none','none','none','moist','slippery','moist','moist','dry','dry','dry','dry','dry','dry','dry','dry','dry','dry','dry','dry','dry','dry','dry','dry','dry'] as Day['mucusSensation'][]
   const mucusA = ['none','none','sticky','sticky','creamy','creamy','stretchy','stretchy','stretchy','creamy','creamy','sticky','none','none','none','none','none','none','none','none','none','none','none','none','none','none','none','none'] as Day['mucusAppearance'][]
@@ -25,8 +24,8 @@ export async function seedDemoCycle(start: {y:number,m:number,d:number}, mode:'t
     let lifestyle: Day['lifestyle'] = {}
     let bbtDisturbed = false
     if (mode==='messy'){
-      if (i in {2:1, 6:1, 11:1, 17:1}) { // sprinkle missing/shifted temps
-        if (i===11) { bbt = undefined as any } // missing
+      if (i in {2:1, 6:1, 11:1, 17:1}) {
+        if (i===11) { bbt = undefined as any }
         else { bbt = (bbt ?? 36.5) + 0.3; lifestyle.alcohol = true; bbtDisturbed = true }
       }
       if (i===4) lifestyle.illness = true
