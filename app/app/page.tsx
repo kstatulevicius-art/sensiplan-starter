@@ -10,6 +10,7 @@ import SettingsDemo from './SettingsDemo'
 import ChartModeToggle from './ChartModeToggle'
 import CalendarToggle from './CalendarToggle'
 import AxisModeToggle from './AxisModeToggle'
+import ChartErrorBoundary from './ChartErrorBoundary'
 import MonthGrid from './calendar/MonthGrid'
 import WeekStrip from './calendar/WeekStrip'
 import { fromId, toId, addMonths } from './calendar/utils'
@@ -214,13 +215,17 @@ export default function Tracker() {
       <Section>
         <GlassCard>
           <div className="flex items-center justify-between mb-3"><h2 className="text-xl font-semibold">Chart</h2><div className='flex gap-2'><AxisModeToggle mode={axisMode} setMode={setAxisMode} /><ChartModeToggle mode={chartMode} setMode={setChartMode} /></div></div>
-          {chartMode==='classic' ? (
-            <ChartSensiplan days={entries} markers={out.markers} axisMode={axisMode} />
-          ) : (
-            <div>
-              <ChartBBT days={entries} markers={out.markers as any} />
-            </div>
-          )}
+          {(
+          <ChartErrorBoundary>
+            {chartMode==='classic' ? (
+              <ChartSensiplan days={entries} markers={out.markers} axisMode={axisMode} />
+            ) : (
+              <div>
+                <ChartBBT days={entries} markers={out.markers as any} />
+              </div>
+            )}
+          </ChartErrorBoundary>
+          )
           <div className="text-xs text-slate-500 mt-3">
             Red line = BBT • Blue bars = mucus quality • Green band = fertile window • Dashed lines = Peak / Temp shift
           </div>
@@ -237,7 +242,7 @@ export default function Tracker() {
       <Section>
         <GlassCard>
           <h2 className="text-xl font-semibold mb-3">Settings</h2>
-          <SettingsDemo onAfterChange={refreshEntries} />
+          <SettingsDemo onAfterChange={()=>{ setAxisMode('calendar'); refreshEntries() }} />
         </GlassCard>
       </Section>
 </Section>
