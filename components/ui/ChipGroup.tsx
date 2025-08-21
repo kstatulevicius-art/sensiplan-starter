@@ -1,16 +1,17 @@
-'use client';
-import { useState } from 'react';
-export default function ChipGroup({options,onChange}:{options:string[],onChange?:(val:string)=>void}) {
-  const [selected,setSelected] = useState<string|null>(null);
+'use client'
+import Pill from './Pill'
+
+export type Option = { value: string, label: string }
+
+export default function ChipGroup({ value, onChange, options, ariaLabel }:{ 
+  value: string, onChange: (v:string)=>void, options: Option[], ariaLabel?: string 
+}){
   return (
-    <div className="flex gap-2 flex-wrap">
-      {options.map(opt=>(
-        <button key={opt} onClick={()=>{setSelected(opt);onChange&&onChange(opt)}}
-          className={`px-3 py-1 rounded-full text-sm font-medium transition ${
-            selected===opt ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}>
-          {opt}
-        </button>
+    <div role="radiogroup" aria-label={ariaLabel} className="flex flex-wrap gap-2">
+      {options.map(opt => (
+        <Pill key={opt.value} active={opt.value===value} onClick={()=>onChange(opt.value)} ariaLabel={opt.label}>
+          {opt.label}
+        </Pill>
       ))}
     </div>
   )

@@ -1,9 +1,9 @@
-'use client';
-export default function StatusPill({status}:{status:string}) {
-  const map:any = {
-    fertile:'bg-green-100 text-green-700',
-    infertile:'bg-gray-100 text-gray-700',
-    'use protection':'bg-red-100 text-red-700'
-  }
-  return <span className={`px-3 py-1 rounded-full text-sm font-semibold ${map[status.toLowerCase()]||'bg-gray-100'}`}>{status}</span>
+export default function StatusPill({ state }:{ state?: 'FERTILE'|'INFERTILE'|'USE_CAUTION' }){
+  const label = state==='FERTILE' ? 'Fertile' : state==='INFERTILE' ? 'Infertile' : 'Use caution'
+  const cls = state==='FERTILE'
+    ? 'bg-emerald-100 text-emerald-700 ring-emerald-200'
+    : state==='INFERTILE'
+      ? 'bg-sky-100 text-sky-700 ring-sky-200'
+      : 'bg-orange-100 text-orange-700 ring-orange-200'
+  return <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm ring-1 ${cls}`}>{label}</span>
 }
