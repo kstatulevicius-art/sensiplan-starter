@@ -13,6 +13,7 @@ import MonthGrid from './calendar/MonthGrid'
 import WeekStrip from './calendar/WeekStrip'
 import { fromId, toId, addMonths } from './calendar/utils'
 import SettingsDemo from './SettingsDemo'
+import SettingsDensity from './SettingsDensity'
 
 const ChartSensiplan = dynamic(() => import('./ChartSensiplanSVG'), { ssr: false })
 
@@ -22,6 +23,14 @@ function todayId(){
   const d = new Date()
   const p = (n:number) => String(n).padStart(2,'0')
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`
+}
+
+function prettyStatus(s: string | undefined){
+  if (!s) return 'Use caution'
+  if (s === 'USE_CAUTION') return 'Use caution'
+  if (s === 'INFERTILE') return 'Infertile'
+  if (s === 'FERTILE') return 'Fertile'
+  return s.replace(/_/g,' ').replace(/\b\w/g, m => m.toUpperCase())
 }
 
 export default function Tracker(){
@@ -112,7 +121,7 @@ export default function Tracker(){
       <Section className="pt-6">
         <div className="text-center mb-6">
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Tracker</h1>
-          <p className="text-slate-600 mt-2">Select any day to edit. Status updates instantly.</p>
+          <p className="text-slate-600 mt-2 small-text">Select any day to edit. Status updates instantly.</p>
         </div>
 
         <div className="flex items-center justify-between mb-3">
@@ -126,7 +135,7 @@ export default function Tracker(){
               </div>
             )}
           </div>
-          <div className="text-sm text-slate-600">Selected: <span className="font-medium">{selectedId}</span> • Status: <span className="badge">{status}</span></div>
+          <div className="text-sm text-slate-600">Selected: <span className="font-medium">{selectedId}</span> • Status: <span className="badge">{prettyStatus(status)}</span></div>
         </div>
 
         <GlassCard>
@@ -227,10 +236,11 @@ export default function Tracker(){
             </div>
           </div>
           <ChartErrorBoundary>
-            <ChartSensiplan days={entries} markers={out.markers} axisMode={axisMode} />
+            <ChartSensiplan days={entries} markers={out.markers} axisMode={axisMode} mode={chartMode} />
           </ChartErrorBoundary>
           <div className="text-xs text-slate-500 mt-3">
             Red line = BBT • Blue bars = mucus quality • Green band = fertile window • Dashed lines = Peak / Temp shift
+            {chartMode==='enhanced' && <span> • Cyan line = RW Max • Yellow shade = P+1..P+3 • Purple triangles = intercourse</span>}
           </div>
         </GlassCard>
       </Section>
@@ -247,7 +257,10 @@ export default function Tracker(){
       <Section>
         <GlassCard>
           <h2 className="text-xl font-semibold mb-3">Settings</h2>
-          <SettingsDemo onAfterChange={()=>{ setAxisMode('calendar'); refreshEntries() }} />
+          <div className="grid gap-4 md:grid-cols-2">
+            <SettingsDemo onAfterChange={()=>{ setAxisMode('calendar'); (async()=>{ const ds = await db.days.toArray(); setEntries(ds.sort((a,b)=> a.id.localeCompare(b.id)) as Entry[]) })() }} />
+            <SettingsDensity />
+          </div>
         </GlassCard>
       </Section>
     </div>

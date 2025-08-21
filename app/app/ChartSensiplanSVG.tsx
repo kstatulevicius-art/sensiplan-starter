@@ -2,12 +2,13 @@
 import { useMemo, useRef, useState } from 'react'
 import type { Day } from '@/lib/engine'
 
-type Marker = { flags?: Record<string, boolean>, cycleDay?: number, cycleId?: string }
+type Marker = { flags?: Record<string, boolean>, cycleDay?: number, cycleId?: string, refWindowMax?: number }
 
 type Props = {
   days: Day[]
   markers: Record<string, Marker>
   axisMode: 'calendar'|'cycle'
+  mode?: 'classic'|'enhanced'
 }
 
 type Row = {
@@ -19,6 +20,7 @@ type Row = {
   shift?: boolean
   p3?: boolean
   xLabel: string
+  hasCoitus: boolean
 }
 
 function mucusLevel(d: Day){
@@ -32,7 +34,7 @@ function mucusLevel(d: Day){
   }
 }
 
-export default function ChartSensiplanSVG({ days, markers, axisMode }: Props){
+export default function ChartSensiplanSVG({ days, markers, axisMode, mode='classic' }: Props){
   let rows: Row[] = days.map(d => ({
     id: d.id,
     cd: (markers as any)[d.id]?.cycleDay ?? null,
@@ -42,6 +44,7 @@ export default function ChartSensiplanSVG({ days, markers, axisMode }: Props){
     p3: (markers as any)[d.id]?.flags?.pPlus3 ?? false,
     shift: (markers as any)[d.id]?.flags?.tempShiftConfirmed ?? false,
     xLabel: d.id,
+    hasCoitus: !!(d.coitus?.events?.length)
   }))
 
   if (axisMode === 'cycle'){
@@ -79,10 +82,17 @@ export default function ChartSensiplanSVG({ days, markers, axisMode }: Props){
   const mucusBaseY = dims.padT + innerH
 
   const fertileStartIndex = rows.findIndex(r => r.mucus > 0)
+  const pIndex = rows.findIndex(r => !!r.peak)
   const p3Index = rows.findIndex(r => !!r.p3)
   const shiftIndex = rows.findIndex(r => !!r.shift)
   const fertileEndIndex = Math.max(p3Index, shiftIndex)
   const hasFertileArea = fertileStartIndex !== -1 && fertileEndIndex !== -1 && fertileEndIndex > fertileStartIndex
+
+  const refWindowMax = (() => {
+    const k = rows.findIndex(r => (markers as any)[r.id]?.flags?.tempShiftConfirmed)
+    if (k>=0) return (markers as any)[rows[k].id]?.refWindowMax
+    return undefined
+  })()
 
   const bbtPath = useMemo(() => {
     let d = ''
@@ -103,12 +113,18 @@ export default function ChartSensiplanSVG({ days, markers, axisMode }: Props){
   const [hover, setHover] = useState<{i:number,x:number,y:number}|null>(null)
 
   function onMove(e: React.MouseEvent<SVGSVGElement>){
-    const rect = svgRef.current?.getBoundingClientRect()
-    if (!rect) return
-    const relX = e.clientX - rect.left
-    let nearest = 0, best = Infinity
+    if (!svgRef.current) return
+    const pt = svgRef.current.createSVGPoint()
+    pt.x = e.clientX; pt.y = e.clientY
+    const ctm = svgRef.current.getScreenCTM()
+    if (!ctm) return
+    const inv = ctm.inverse()
+    const { x: vx } = pt.matrixTransform(inv) // viewBox-space X
+    // find nearest index by viewBox x
+    let nearest = 0
+    let best = Infinity
     for (let i=0;i<n;i++){
-      const dx = Math.abs(x(i) - relX)
+      const dx = Math.abs(x(i) - vx)
       if (dx < best){ best = dx; nearest = i }
     }
     const r = rows[nearest]
@@ -128,9 +144,11 @@ export default function ChartSensiplanSVG({ days, markers, axisMode }: Props){
         onMouseMove={onMove}
         onMouseLeave={onLeave}
       >
+        {/* Axes */}
         <line x1={dims.padL} y1={dims.padT} x2={dims.padL} y2={dims.padT+innerH} stroke="#e5e7eb" />
         <line x1={dims.padL} y1={dims.padT+innerH} x2={dims.padL+innerW} y2={dims.padT+innerH} stroke="#e5e7eb" />
 
+        {/* Fertile area */}
         {hasFertileArea && (
           <rect
             x={x(fertileStartIndex)}
@@ -141,6 +159,24 @@ export default function ChartSensiplanSVG({ days, markers, axisMode }: Props){
           />
         )}
 
+        {/* Enhanced overlays */}
+        {mode==='enhanced' && (
+          <g>
+            {/* Reference-window max line if available */}
+            {typeof refWindowMax === 'number' && (
+              <g>
+                <line x1={dims.padL} x2={dims.padL+innerW} y1={y(refWindowMax)} y2={y(refWindowMax)} stroke="#0ea5e9" strokeDasharray="4 4" />
+                <text x={dims.padL+4} y={y(refWindowMax)-4} fontSize="10" fill="#0ea5e9">RW Max</text>
+              </g>
+            )}
+            {/* Shade P+1..P+3 if peak known */}
+            {(pIndex>=0 && p3Index>pIndex) && (
+              <rect x={x(pIndex+1)} y={dims.padT} width={x(p3Index) - x(pIndex+1)} height={innerH} fill="rgba(234,179,8,0.12)" />
+            )}
+          </g>
+        )}
+
+        {/* Mucus bars */}
         {rows.map((r, i) => {
           const barW = Math.max(3, innerW / Math.max(20, n) * 0.7)
           return (
@@ -154,17 +190,26 @@ export default function ChartSensiplanSVG({ days, markers, axisMode }: Props){
           )
         })}
 
+        {/* BBT path */}
         <path d={bbtPath} stroke="#ef4444" strokeWidth="2" fill="none" />
 
+        {/* Peak / Shift markers */}
         {rows.map((r, i) => r.peak ? <line key={'p'+i} x1={x(i)} x2={x(i)} y1={dims.padT} y2={dims.padT+innerH} stroke="#6b7280" strokeDasharray="4 4" /> : null)}
         {rows.map((r, i) => r.shift ? <line key={'s'+i} x1={x(i)} x2={x(i)} y1={dims.padT} y2={dims.padT+innerH} stroke="#9ca3af" strokeDasharray="4 4" /> : null)}
 
+        {/* Coitus markers on baseline (enhanced) */}
+        {mode==='enhanced' && rows.map((r,i) => r.hasCoitus ? (
+          <polygon key={'c'+i} points={`${x(i)},${mucusBaseY} ${x(i)-4},${mucusBaseY-7} ${x(i)+4},${mucusBaseY-7}`} fill="#8b5cf6" />
+        ) : null)}
+
+        {/* X ticks */}
         {rows.map((r, i) => (i % tickEvery === 0) ? (
           <text key={'t'+i} x={x(i)} y={dims.padT+innerH+14} textAnchor="middle" fontSize="10" fill="#334155">
             {r.xLabel}
           </text>
         ) : null)}
 
+        {/* Y ticks (bbt) */}
         {[0,1,2,3,4].map(k => {
           const val = yScaleMin + k*(yScaleMax - yScaleMin)/4
           const yy = y(val)
@@ -176,6 +221,7 @@ export default function ChartSensiplanSVG({ days, markers, axisMode }: Props){
           )
         })}
 
+        {/* Hover */}
         {hover && (
           <g>
             <line x1={hover.x} x2={hover.x} y1={dims.padT} y2={dims.padT+innerH} stroke="rgba(0,0,0,0.15)" />

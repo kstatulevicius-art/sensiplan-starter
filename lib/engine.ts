@@ -128,7 +128,7 @@ export function runSensiplan(days: Day[], cfg: EngineConfig): EngineOutput {
     endFertileIdx = Math.max(tempShiftIdx, pPlus3Idx)
   }
 
-  // Build a per-day "seen fertile mucus up to this day" helper and per-cycle day number
+  // Build helpers
   const seenFqmUpTo: boolean[] = []
   const cycleDayAt: number[] = []
   {
@@ -150,18 +150,17 @@ export function runSensiplan(days: Day[], cfg: EngineConfig): EngineOutput {
     const flags: Record<string, boolean> = {}
     const explanations: string[] = []
 
-    if(tempShiftIdx!==null && i===tempShiftIdx) { flags['tempShiftConfirmed'] = true; if(tempShiftRefMax!==null) explanations.push(`Temperature shift confirmed vs RW max ${tempShiftRefMax.toFixed(2)}°C`) }
-    if(peakIdx!==null && i===peakIdx) { flags['peak'] = true; explanations.push('Peak mucus day (last fertile-quality mucus)') }
-    if(pPlus3Idx!==null && i===pPlus3Idx) { flags['pPlus3'] = true; explanations.push('Third non-fertile mucus day after Peak (P+3)') }
+    if(tempShiftIdx!==null && i===tempShiftIdx) { flags['tempShiftConfirmed'] = true; if(tempShiftRefMax!==null){ m.refWindowMax = tempShiftRefMax; explanations.push(`Temperature shift confirmed (3-over-6). Reference-window max = ${tempShiftRefMax.toFixed(2)}°C`) } }
+    if(peakIdx!==null && i===peakIdx) { flags['peak'] = true; explanations.push('Peak mucus day (last day of fertile-quality mucus).') }
+    if(pPlus3Idx!==null && i===pPlus3Idx) { flags['pPlus3'] = true; explanations.push('Third non-fertile mucus day after Peak (P+3).') }
 
-    // DEFAULT: cautious until we decide
+    // DEFAULT
     let state: 'INFERTILE'|'FERTILE'|'USE_CAUTION' = 'USE_CAUTION'
 
     // Post-ovulation infertility once both rules closed
     if(endFertileIdx!==null){
       if(i > endFertileIdx){ state = 'INFERTILE' }
       else if(i <= endFertileIdx){
-        // pre-close phase: potentially fertile if any fertile-type mucus seen up to now
         state = seenFqmUpTo[i] ? 'FERTILE' : 'USE_CAUTION'
       }
     } else {
@@ -169,14 +168,24 @@ export function runSensiplan(days: Day[], cfg: EngineConfig): EngineOutput {
       state = seenFqmUpTo[i] ? 'FERTILE' : 'USE_CAUTION'
     }
 
-    // --- Sensiplan-aligned correction: bleeding itself does NOT imply fertility ---
-    // Early-cycle rule (simple version): CD <= 5 with ongoing bleeding and no fertile mucus yet => INFERTILE
+    // Early-cycle bleeding correction (simple CD1–CD5)
     const cd = cycleDayAt[i] || 1
     const bleedingToday = d.bleeding && d.bleeding!=='none'
     const noFqmYetThisCycle = !seenFqmUpTo[i]
     if (bleedingToday && cd <= 5 && noFqmYetThisCycle){
       state = 'INFERTILE'
-      explanations.push('Menstruation days CD1–CD5 without fertile-type mucus are considered pre-ovulatory infertile (simplified rule).')
+      explanations.push('CD1–CD5 menstrual day without fertile-type mucus → pre-ovulatory infertile (simplified rule).')
+    }
+
+    // Fill general explanations so panel is never empty
+    if (insufficient) {
+      if (explanations.length === 0) explanations.push('Insufficient data: need ≥6 valid temperatures and some mucus observations for robust classification.')
+    } else if (endFertileIdx!==null && i > endFertileIdx) {
+      explanations.push('Post-ovulatory infertility: both temperature and mucus rules are closed.')
+    } else if (!seenFqmUpTo[i]) {
+      explanations.push('Pre-ovulatory and no fertile-type mucus observed yet.')
+    } else {
+      explanations.push('Fertile-type mucus observed; awaiting rule closure.')
     }
 
     let conf = 1.0

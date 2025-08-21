@@ -2,16 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Density tokens */
+:root {
+  --space-1: 0.375rem; /* 6px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --tile-min: 56px;
+  --font-xs: 0.75rem;  /* 12px */
+  --font-sm: 0.875rem; /* 14px */
+}
+
+:root[data-density='compact']{
+  --space-1: 0.25rem;
+  --space-2: 0.375rem;
+  --space-3: 0.5rem;
+  --tile-min: 44px;
+  --font-xs: 0.6875rem;
+  --font-sm: 0.8125rem;
+}
+:root[data-density='comfy']{
+  --space-1: 0.5rem;
+  --space-2: 0.75rem;
+  --space-3: 1rem;
+  --tile-min: 64px;
+  --font-xs: 0.8125rem;
+  --font-sm: 0.9375rem;
+}
+
 *, *::before, *::after { box-sizing: border-box; }
 img, svg, video, canvas { display: block; max-width: 100%; height: auto; }
 .app-container { min-width: 0; }
 section, .glass, .card { min-width: 0; }
+
 input, select, textarea, button { max-width: 100%; min-width: 0; }
 form input, form select, form textarea, form button { width: 100%; }
+
 .glass { @apply rounded-xl overflow-hidden; }
-.btn { @apply inline-flex items-center justify-center px-3 py-2 rounded-xl bg-slate-900 text-white text-sm; }
+
+.btn { @apply inline-flex items-center justify-center rounded-xl bg-slate-900 text-white text-sm; padding: var(--space-2) var(--space-3); }
 .btn.secondary { @apply bg-white text-slate-800 border border-black/10; }
-.badge { @apply inline-block px-2 py-0.5 rounded-lg text-xs bg-black/5; }
+
+.badge { @apply inline-block rounded-lg; padding: 0.125rem 0.5rem; font-size: var(--font-xs); background: rgba(0,0,0,0.05); }
+
 .grid { align-items: stretch; }
 @media (min-width: 768px) { .md\:grid-cols-2 > * { min-width: 0; } }
+
 button.btn.secondary { white-space: nowrap; }
+
+/* Calendar sizing (tiles honor density) */
+.month-tile { min-width: var(--tile-min); }
+.week-tile { min-width: calc(var(--tile-min) - 8px); }
+.small-text { font-size: var(--font-xs); }
+.body-text { font-size: var(--font-sm); }
