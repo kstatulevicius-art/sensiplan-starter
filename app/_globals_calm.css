@@ -1,0 +1,6 @@
+.hero {
+  background: linear-gradient(120deg, #f0f7ff 0%, #ffffff 100%);
+}
+.compact { padding:0.25rem; }
+.cozy { padding:0.5rem; }
+.comfy { padding:1rem; }
