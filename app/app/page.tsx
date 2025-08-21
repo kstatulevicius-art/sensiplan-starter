@@ -18,8 +18,6 @@ import '../_globals_calm.css'
 const ChartSensiplan = dynamic(() => import('./ChartSensiplanSVG'), { ssr: false })
 
 type Entry = EngineDay
-type Axis = 'calendar'|'cycle'
-type CMode = 'classic'|'enhanced'
 
 function todayId(){
   const d = new Date()
@@ -30,8 +28,8 @@ function todayId(){
 export default function Tracker(){
   const [entries, setEntries] = useState<Entry[]>([])
   const [calendarMode, setCalendarMode] = useState<'month'|'week'>(() => (typeof window!=='undefined' && (localStorage.getItem('calMode') as any)) || 'month')
-  const [chartMode, setChartMode] = useState<CMode>(() => (typeof window!=='undefined' && (localStorage.getItem('chartMode') as any)) || 'classic')
-  const [axisMode, setAxisMode] = useState<Axis>(() => (typeof window!=='undefined' && (localStorage.getItem('axisMode') as any)) || 'calendar')
+  const [chartMode, setChartMode] = useState<'classic'|'enhanced'>(() => (typeof window!=='undefined' && (localStorage.getItem('chartMode') as any)) || 'classic')
+  const [axisMode, setAxisMode] = useState<'calendar'|'cycle'>(() => (typeof window!=='undefined' && (localStorage.getItem('axisMode') as any)) || 'calendar')
 
   const [selectedId, setSelectedId] = useState<string>(() => todayId())
   const [monthCursor, setMonthCursor] = useState<Date>(() => fromId(todayId()))
@@ -130,7 +128,11 @@ export default function Tracker(){
                 <button className="px-3 py-1.5 rounded-full bg-white ring-1 ring-slate-200 text-sm" onClick={()=> setMonthCursor(addMonths(monthCursor,1))}>Next</button>
               </div>
             )}
-            <Segmented value={calendarMode} onChange={setCalendarMode} options={[{value:'month', label:'Month'},{value:'week', label:'Week'}]} />
+            <Segmented
+              value={calendarMode}
+              onChange={(v)=>setCalendarMode(v as 'month'|'week')}
+              options={[{value:'month', label:'Month'},{value:'week', label:'Week'}]}
+            />
           </div>
         </div>
         {calendarMode==='month' ?
@@ -227,8 +229,16 @@ export default function Tracker(){
         <div className="flex items-center justify-between mb-3">
           <div className="text-lg font-semibold">Chart</div>
           <div className="flex gap-2">
-            <Segmented value={axisMode} onChange={setAxisMode} options={[{value:'calendar', label:'Calendar'},{value:'cycle', label:'Cycle'}]} />
-            <Segmented value={chartMode} onChange={setChartMode} options={[{value:'classic', label:'Classic'},{value:'enhanced', label:'Enhanced'}]} />
+            <Segmented
+              value={axisMode}
+              onChange={(v)=>setAxisMode(v as 'calendar'|'cycle')}
+              options={[{value:'calendar', label:'Calendar'},{value:'cycle', label:'Cycle'}]}
+            />
+            <Segmented
+              value={chartMode}
+              onChange={(v)=>setChartMode(v as 'classic'|'enhanced')}
+              options={[{value:'classic', label:'Classic'},{value:'enhanced', label:'Enhanced'}]}
+            />
           </div>
         </div>
         <ChartSensiplan days={entries} markers={out.markers} axisMode={axisMode} mode={chartMode} />
@@ -246,7 +256,7 @@ export default function Tracker(){
       <Card>
         <Header title="Settings" />
         <div className="grid gap-4 md:grid-cols-2">
-          <SettingsDemo onAfterChange={async()=>{ const ds = await db.days.toArray(); setEntries(ds.sort((a,b)=> a.id.localeCompare(b.id)) as Entry[])} } />
+          <SettingsDemo onAfterChange={async()=>{ const ds = await db.days.toArray(); setEntries(ds.sort((a,b)=> a.id.localeCompare(b.id)) as Entry[]) }} />
           <SettingsDensity />
         </div>
       </Card>
