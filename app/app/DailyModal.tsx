@@ -2,7 +2,11 @@
 import React, { useEffect, useState } from 'react'
 import ChipGroup from '@/components/ui/ChipGroup'
 
-type CoitusEvent = { protection?: 'none'|'condom'|'withdrawal'; ejaculation?: 'vaginal'|'external'|'none' }
+// Widen type to align with engine.CoitusEvent
+export type CoitusEvent = {
+  protection?: 'none'|'condom'|'withdrawal'|'diaphragm'|'other'
+  ejaculation?: 'vaginal'|'external'|'none'
+}
 
 export default function DailyModal({ open, onClose, initial, onSave }:{
   open: boolean,
@@ -14,7 +18,7 @@ export default function DailyModal({ open, onClose, initial, onSave }:{
     mucusSensation?: 'none'|'dry'|'moist'|'slippery',
     mucusAppearance?: 'none'|'sticky'|'creamy'|'clear'|'stretchy',
     notes?: string,
-    coitus?: { events: CoitusEvent[] }
+    coitus?: { events: CoitusEvent[]|any[] } // accept engine-shaped without type conflict
   },
   onSave: (data:any)=>Promise<void>|void
 }){
@@ -31,7 +35,7 @@ export default function DailyModal({ open, onClose, initial, onSave }:{
     setMS(initial?.mucusSensation ?? 'dry')
     setMA(initial?.mucusAppearance ?? 'none')
     setNotes(initial?.notes ?? '')
-    setCoitus(initial?.coitus?.events ?? [])
+    setCoitus((initial?.coitus?.events as CoitusEvent[]|undefined) ?? [])
   }, [open, initial])
 
   if (!open) return null
@@ -47,7 +51,7 @@ export default function DailyModal({ open, onClose, initial, onSave }:{
           <div>
             <div className="text-sm text-slate-600 mb-2">Temperature (°C)</div>
             <div className="flex gap-2">
-              <input id="modalTemp" className="flex-1 rounded-xl ring-1 ring-slate-200 px-3 py-2" inputMode="decimal" placeholder="36.55" value={temp} onChange={e=>setTemp(e.target.value)} />
+              <input className="flex-1 rounded-xl ring-1 ring-slate-200 px-3 py-2" inputMode="decimal" placeholder="36.55" value={temp} onChange={e=>setTemp(e.target.value)} />
               <div className="flex gap-1">
                 <button className="px-3 py-2 rounded-lg ring-1 ring-slate-200" onClick={()=>setTemp(t=> (t? (Number(t)+0.05).toFixed(2):'36.50'))}>+0.05</button>
                 <button className="px-3 py-2 rounded-lg ring-1 ring-slate-200" onClick={()=>setTemp(t=> (t? (Number(t)-0.05).toFixed(2):'36.50'))}>-0.05</button>
@@ -93,11 +97,13 @@ export default function DailyModal({ open, onClose, initial, onSave }:{
               <button className="px-3 py-1.5 rounded-full bg-white ring-1 ring-slate-200 text-sm" onClick={()=>setCoitus(prev => [...prev, { protection:'none', ejaculation:'vaginal' }])}>Unprotected</button>
               <button className="px-3 py-1.5 rounded-full bg-white ring-1 ring-slate-200 text-sm" onClick={()=>setCoitus(prev => [...prev, { protection:'condom', ejaculation:'external' }])}>Condom</button>
               <button className="px-3 py-1.5 rounded-full bg-white ring-1 ring-slate-200 text-sm" onClick={()=>setCoitus(prev => [...prev, { protection:'withdrawal', ejaculation:'external' }])}>Withdrawal</button>
+              <button className="px-3 py-1.5 rounded-full bg-white ring-1 ring-slate-200 text-sm" onClick={()=>setCoitus(prev => [...prev, { protection:'diaphragm', ejaculation:'external' }])}>Diaphragm</button>
+              <button className="px-3 py-1.5 rounded-full bg-white ring-1 ring-slate-200 text-sm" onClick={()=>setCoitus(prev => [...prev, { protection:'other', ejaculation:'external' }])}>Other</button>
             </div>
             <ul className="mt-3 space-y-1 text-sm">
               {coitus.map((ev, i) => (
                 <li key={i} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-1.5 ring-1 ring-slate-200">
-                  <span>{ev.protection} {ev.ejaculation ? `• ${ev.ejaculation}` : ''}</span>
+                  <span>{ev.protection ?? 'unknown'} {ev.ejaculation ? `• ${ev.ejaculation}` : ''}</span>
                   <button className="text-red-600 underline" onClick={()=>setCoitus(prev => prev.filter((_,k)=>k!==i))}>Delete</button>
                 </li>
               ))}
