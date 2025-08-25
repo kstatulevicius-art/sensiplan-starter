@@ -1,19 +1,5 @@
 /* === STATUS BACKGROUNDS (subtle, light, readable) === */
-.pageBg {
-  transition: background 220ms ease;
-}
-
-/* Fertile: soft green */
-.bg-fertile {
-  background: linear-gradient(180deg, #f0fff5 0%, #ffffff 70%);
-}
-
-/* Infertile: soft sky */
-.bg-infertile {
-  background: linear-gradient(180deg, #f3f9ff 0%, #ffffff 70%);
-}
-
-/* Use caution / unknown: soft amber */
-.bg-caution {
-  background: linear-gradient(180deg, #fff8ee 0%, #ffffff 70%);
-}
+.pageBg { transition: background 220ms ease; }
+.bg-fertile  { background: linear-gradient(180deg, #f0fff5 0%, #ffffff 70%); }
+.bg-infertile{ background: linear-gradient(180deg, #f3f9ff 0%, #ffffff 70%); }
+.bg-caution  { background: linear-gradient(180deg, #fff8ee 0%, #ffffff 70%); }
