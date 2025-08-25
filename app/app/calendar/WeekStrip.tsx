@@ -1,6 +1,5 @@
 'use client'
 import React from 'react'
-import { IconDroplet, IconSparkle, IconDot, IconHeart } from '@/components/ui/Icon'
 import '../../_calendar.css'
 import { fromId, toId } from './utils'
 
@@ -24,7 +23,7 @@ export default function WeekStrip({ selectedId, onSelect, statusMap }:{
   for (let i=0;i<7;i++){ days.push(new Date(d)); d.setDate(d.getDate()+1) }
 
   return (
-    <div className="cal-week">
+    <div className="cal-grid">
       {days.map(dt => {
         const id = toId(dt)
         const st = statusMap[id]
@@ -35,14 +34,13 @@ export default function WeekStrip({ selectedId, onSelect, statusMap }:{
         const filled = st?.filled
 
         return (
-          <button key={id} onClick={()=>onSelect(id)} className={`cal-week-item ${isSelected?'selected':''}`}>
-            <div className="text-xs text-slate-500">{dt.toLocaleDateString(undefined,{weekday:'short'})}</div>
-            <div className="font-semibold">{dt.getDate()}</div>
-            <div className="cal-icons justify-center mt-1">
-              {bleeding && <IconDroplet />}
-              {mucus && <IconSparkle />}
-              {coitus && <IconHeart />}
-              {filled && !bleeding && !mucus && !coitus && <IconDot />}
+          <button key={id} onClick={()=>onSelect(id)} className={`cal-tile tall ${isSelected?'selected':''}`}>
+            <div className="daynum">{dt.getDate()} <span className="text-xs text-slate-400">{dt.toLocaleDateString(undefined,{weekday:'short'})}</span></div>
+            <div className="cal-icons">
+              {bleeding && <span title="bleeding">💧</span>}
+              {mucus && <span title="fertile mucus">✨</span>}
+              {coitus && <span title="intercourse">❤</span>}
+              {filled && !bleeding && !mucus && !coitus && <span title="logged">•</span>}
             </div>
           </button>
         )

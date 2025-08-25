@@ -14,38 +14,7 @@
   flex-direction: column;
   justify-content: space-between;
 }
-.cal-tile.selected {
-  outline: 2px solid rgba(16,185,129,0.9);
-  outline-offset: -2px;
-}
-.cal-tile .daynum {
-  font-size: 12px;
-  color: #334155;
-  font-weight: 600;
-}
-.cal-row {
-  display: flex;
-  gap: 6px;
-}
-.cal-icons {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  color: #64748b;
-}
-.cal-week {
-  display: flex;
-  gap: 8px;
-}
-.cal-week-item {
-  min-width: 44px;
-  padding: 6px 8px;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.9);
-  border: 1px solid rgba(15,23,42,0.06);
-  text-align: center;
-}
-.cal-week-item.selected {
-  outline: 2px solid rgba(16,185,129,0.85);
-  outline-offset: -2px;
-}
+.cal-tile.tall { min-height: 110px; }
+.cal-tile.selected { outline: 2px solid rgba(16,185,129,0.9); outline-offset: -2px; }
+.cal-tile .daynum { font-size: 12px; color: #334155; font-weight: 600; }
+.cal-icons { display: flex; gap: 6px; align-items: center; color: #64748b; }

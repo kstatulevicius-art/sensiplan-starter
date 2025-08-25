@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from 'react'
 import ChipGroup from '@/components/ui/ChipGroup'
 
+type CoitusEvent = { protection?: 'none'|'condom'|'withdrawal'; ejaculation?: 'vaginal'|'external'|'none' }
+
 export default function DailyModal({ open, onClose, initial, onSave }:{
   open: boolean,
   onClose: ()=>void,
@@ -11,7 +13,8 @@ export default function DailyModal({ open, onClose, initial, onSave }:{
     bleeding?: 'none'|'spotting'|'light'|'normal'|'heavy',
     mucusSensation?: 'none'|'dry'|'moist'|'slippery',
     mucusAppearance?: 'none'|'sticky'|'creamy'|'clear'|'stretchy',
-    notes?: string
+    notes?: string,
+    coitus?: { events: CoitusEvent[] }
   },
   onSave: (data:any)=>Promise<void>|void
 }){
@@ -20,6 +23,7 @@ export default function DailyModal({ open, onClose, initial, onSave }:{
   const [ms, setMS] = useState<any>('dry')
   const [ma, setMA] = useState<any>('none')
   const [notes, setNotes] = useState<string>('')
+  const [coitus, setCoitus] = useState<CoitusEvent[]>([])
 
   useEffect(()=>{
     setTemp(initial?.bbt?.toString() ?? '')
@@ -27,6 +31,7 @@ export default function DailyModal({ open, onClose, initial, onSave }:{
     setMS(initial?.mucusSensation ?? 'dry')
     setMA(initial?.mucusAppearance ?? 'none')
     setNotes(initial?.notes ?? '')
+    setCoitus(initial?.coitus?.events ?? [])
   }, [open, initial])
 
   if (!open) return null
@@ -42,7 +47,7 @@ export default function DailyModal({ open, onClose, initial, onSave }:{
           <div>
             <div className="text-sm text-slate-600 mb-2">Temperature (°C)</div>
             <div className="flex gap-2">
-              <input className="flex-1 rounded-xl ring-1 ring-slate-200 px-3 py-2" inputMode="decimal" placeholder="36.55" value={temp} onChange={e=>setTemp(e.target.value)} />
+              <input id="modalTemp" className="flex-1 rounded-xl ring-1 ring-slate-200 px-3 py-2" inputMode="decimal" placeholder="36.55" value={temp} onChange={e=>setTemp(e.target.value)} />
               <div className="flex gap-1">
                 <button className="px-3 py-2 rounded-lg ring-1 ring-slate-200" onClick={()=>setTemp(t=> (t? (Number(t)+0.05).toFixed(2):'36.50'))}>+0.05</button>
                 <button className="px-3 py-2 rounded-lg ring-1 ring-slate-200" onClick={()=>setTemp(t=> (t? (Number(t)-0.05).toFixed(2):'36.50'))}>-0.05</button>
@@ -83,6 +88,24 @@ export default function DailyModal({ open, onClose, initial, onSave }:{
           </div>
 
           <div>
+            <div className="text-sm text-slate-600 mb-2">Intercourse</div>
+            <div className="flex flex-wrap gap-2">
+              <button className="px-3 py-1.5 rounded-full bg-white ring-1 ring-slate-200 text-sm" onClick={()=>setCoitus(prev => [...prev, { protection:'none', ejaculation:'vaginal' }])}>Unprotected</button>
+              <button className="px-3 py-1.5 rounded-full bg-white ring-1 ring-slate-200 text-sm" onClick={()=>setCoitus(prev => [...prev, { protection:'condom', ejaculation:'external' }])}>Condom</button>
+              <button className="px-3 py-1.5 rounded-full bg-white ring-1 ring-slate-200 text-sm" onClick={()=>setCoitus(prev => [...prev, { protection:'withdrawal', ejaculation:'external' }])}>Withdrawal</button>
+            </div>
+            <ul className="mt-3 space-y-1 text-sm">
+              {coitus.map((ev, i) => (
+                <li key={i} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-1.5 ring-1 ring-slate-200">
+                  <span>{ev.protection} {ev.ejaculation ? `• ${ev.ejaculation}` : ''}</span>
+                  <button className="text-red-600 underline" onClick={()=>setCoitus(prev => prev.filter((_,k)=>k!==i))}>Delete</button>
+                </li>
+              ))}
+              {coitus.length===0 && <li className="text-slate-500">No events logged for this day.</li>}
+            </ul>
+          </div>
+
+          <div>
             <div className="text-sm text-slate-600 mb-2">Notes</div>
             <textarea className="w-full rounded-xl ring-1 ring-slate-200 px-3 py-2 min-h-[88px]" placeholder="ill, travel, alcohol..." value={notes} onChange={e=>setNotes(e.target.value)} />
           </div>
@@ -96,6 +119,7 @@ export default function DailyModal({ open, onClose, initial, onSave }:{
               bleeding: bleeding==='none'? undefined: bleeding,
               mucusSensation: ms,
               mucusAppearance: ma,
+              coitus: { events: coitus },
               notes
             })
             onClose()
