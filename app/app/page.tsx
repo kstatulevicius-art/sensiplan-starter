@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
@@ -11,16 +10,15 @@ import Segmented from '@/components/ui/Segmented'
 import StatusPill from '@/components/ui/StatusPill'
 import MonthGrid from './calendar/MonthGrid'
 import WeekStrip from './calendar/WeekStrip'
-import { fromId, addMonths } from './calendar/utils'
+import { fromId, toId, addMonths } from './calendar/utils'
 import SettingsDemo from './SettingsDemo'
 import SettingsDensity from './SettingsDensity'
-import '../_globals_calm.css'
+import DailyModal from './DailyModal'
+import '../_calendar.css'
 
 const ChartSensiplan = dynamic(() => import('./ChartSensiplanSVG'), { ssr: false })
 
 type Entry = EngineDay
-type Axis = 'calendar'|'cycle'
-type CMode = 'classic'|'enhanced'
 
 function todayId(){
   const d = new Date()
@@ -28,7 +26,6 @@ function todayId(){
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`
 }
 
-// Map engine state to background class
 function bgForState(state?: 'FERTILE'|'INFERTILE'|'USE_CAUTION') {
   if (state === 'FERTILE') return 'bg-fertile'
   if (state === 'INFERTILE') return 'bg-infertile'
@@ -38,8 +35,8 @@ function bgForState(state?: 'FERTILE'|'INFERTILE'|'USE_CAUTION') {
 export default function Tracker(){
   const [entries, setEntries] = useState<Entry[]>([])
   const [calendarMode, setCalendarMode] = useState<'month'|'week'>(() => (typeof window!=='undefined' && (localStorage.getItem('calMode') as any)) || 'month')
-  const [chartMode, setChartMode] = useState<CMode>(() => (typeof window!=='undefined' && (localStorage.getItem('chartMode') as any)) || 'classic')
-  const [axisMode, setAxisMode] = useState<Axis>(() => (typeof window!=='undefined' && (localStorage.getItem('axisMode') as any)) || 'calendar')
+  const [chartMode, setChartMode] = useState<'classic'|'enhanced'>(() => (typeof window!=='undefined' && (localStorage.getItem('chartMode') as any)) || 'classic')
+  const [axisMode, setAxisMode] = useState<'calendar'|'cycle'>(() => (typeof window!=='undefined' && (localStorage.getItem('axisMode') as any)) || 'calendar')
 
   const [selectedId, setSelectedId] = useState<string>(() => todayId())
   const [monthCursor, setMonthCursor] = useState<Date>(() => fromId(todayId()))
@@ -51,6 +48,8 @@ export default function Tracker(){
   const [coitusEvents, setCoitusEvents] = useState<CoitusEvent[]>([])
   const [notes, setNotes] = useState<string>('')
   const [lifestyle, setLifestyle] = useState<any>({})
+
+  const [modalOpen, setModalOpen] = useState(false)
 
   useEffect(() => { db.days.toArray().then(ds => setEntries(ds.sort((a,b)=> a.id.localeCompare(b.id)) as Entry[])) }, [])
 
@@ -75,7 +74,7 @@ export default function Tracker(){
   const statusMap: Record<string, { filled:boolean, bleeding:any, state:'FERTILE'|'INFERTILE'|'USE_CAUTION', hasCoitus:boolean, hasFertileMucus:boolean, hasLifestyle:boolean }> = {}
   for (const d of entries) {
     statusMap[d.id] = {
-      filled: true,
+      filled: !!(d.bbt || d.bleeding!=='none' || d.mucusSensation!=='dry' || d.mucusAppearance!=='none' || d.coitus?.events?.length || d.notes),
       bleeding: d.bleeding,
       state: (out.markers[d.id]?.state as any) ?? 'USE_CAUTION',
       hasCoitus: !!(d.coitus?.events?.length),
@@ -109,6 +108,17 @@ export default function Tracker(){
   const monthTitle = monthCursor.toLocaleDateString(undefined, { month:'long', year:'numeric' })
   const pageBgClass = bgForState(selectedMarker?.state as any)
 
+  // Explanations: show rule-oriented tips when present
+  const decisionList: string[] = (out.markers[selectedId]?.explanations && out.markers[selectedId].explanations.length>0)
+    ? out.markers[selectedId].explanations
+    : [
+      selectedMarker?.state==='INFERTILE' ? 'No fertile-type mucus observed and temperature pattern indicates infertile phase.' :
+      selectedMarker?.state==='FERTILE' ? 'Fertile-type mucus or temperature pattern indicates fertile phase.' :
+      'Not enough information yet; consider today as fertile to stay safe.'
+    ]
+
+  const selectedEntry = entries.find(e=>e.id===selectedId)
+
   return (
     <div className={`pageBg ${pageBgClass} min-h-screen`}>
       <div className="p-4 md:p-6 space-y-6">
@@ -123,9 +133,9 @@ export default function Tracker(){
             <StatusPill state={selectedMarker?.state as any} />
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <button className="px-3 py-1.5 rounded-full bg-emerald-600 text-white text-sm" onClick={()=>document.getElementById('tempInput')?.focus()}>Add Temp</button>
-            <button className="px-3 py-1.5 rounded-full bg-white ring-1 ring-slate-200 text-sm">Add Mucus</button>
-            <button className="px-3 py-1.5 rounded-full bg-white ring-1 ring-slate-200 text-sm">Add Note</button>
+            <button className="px-3 py-1.5 rounded-full bg-emerald-600 text-white text-sm" onClick={()=>setModalOpen(true)}>Log Today</button>
+            <button className="px-3 py-1.5 rounded-full bg-white ring-1 ring-slate-200 text-sm" onClick={()=>{}}>Add Mucus</button>
+            <button className="px-3 py-1.5 rounded-full bg-white ring-1 ring-slate-200 text-sm" onClick={()=>{}}>Add Note</button>
           </div>
         </div>
 
@@ -155,88 +165,6 @@ export default function Tracker(){
           }
         </Card>
 
-        {/* Daily Entry */}
-        <Card>
-          <Header title="Daily Entry" subtitle="Log basal temperature, bleeding, and cervical mucus." />
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <div className="text-sm text-slate-600 mb-2">Temperature (°C)</div>
-                <input id="tempInput" className="w-full rounded-xl ring-1 ring-slate-200 px-3 py-2" inputMode="decimal" placeholder="36.55" value={temp} onChange={e=>setTemp(e.target.value)} />
-              </div>
-              <div>
-                <div className="text-sm text-slate-600 mb-2">Bleeding</div>
-                <ChipGroup
-                  ariaLabel="Bleeding"
-                  value={bleeding}
-                  onChange={v=>setBleeding(v as any)}
-                  options={[
-                    { value:'none', label:'None' },
-                    { value:'spotting', label:'Spot' },
-                    { value:'light', label:'Light' },
-                    { value:'normal', label:'Normal' },
-                    { value:'heavy', label:'Heavy' },
-                  ]}
-                />
-              </div>
-              <div>
-                <div className="text-sm text-slate-600 mb-2">Mucus Sensation</div>
-                <ChipGroup
-                  ariaLabel="Mucus Sensation"
-                  value={mucusSensation}
-                  onChange={v=>setMS(v as any)}
-                  options={[
-                    { value:'none', label:'None' },
-                    { value:'dry', label:'Dry' },
-                    { value:'moist', label:'Moist' },
-                    { value:'slippery', label:'Slippery' },
-                  ]}
-                />
-              </div>
-              <div>
-                <div className="text-sm text-slate-600 mb-2">Mucus Appearance</div>
-                <ChipGroup
-                  ariaLabel="Mucus Appearance"
-                  value={mucusAppearance}
-                  onChange={v=>setMA(v as any)}
-                  options={[
-                    { value:'none', label:'None' },
-                    { value:'sticky', label:'Sticky' },
-                    { value:'creamy', label:'Creamy' },
-                    { value:'clear', label:'Clear' },
-                    { value:'stretchy', label:'Stretchy' },
-                  ]}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <div className="text-sm text-slate-600 mb-2">Intercourse</div>
-                <div className="flex flex-wrap gap-2">
-                  <button className="px-3 py-1.5 rounded-full bg-white ring-1 ring-slate-200 text-sm" onClick={()=>setCoitusEvents(prev => [...prev, { protection:'none', ejaculation:'vaginal' }])}>Unprotected</button>
-                  <button className="px-3 py-1.5 rounded-full bg-white ring-1 ring-slate-200 text-sm" onClick={()=>setCoitusEvents(prev => [...prev, { protection:'condom', ejaculation:'external' }])}>Condom</button>
-                  <button className="px-3 py-1.5 rounded-full bg-white ring-1 ring-slate-200 text-sm" onClick={()=>setCoitusEvents(prev => [...prev, { protection:'withdrawal', ejaculation:'external' }])}>Withdrawal</button>
-                </div>
-                <ul className="mt-3 space-y-1 text-sm">
-                  {coitusEvents.map((ev, i) => (
-                    <li key={i} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-1.5 ring-1 ring-slate-200">
-                      <span>{ev.protection} {ev.ejaculation ? `• ${ev.ejaculation}` : ''}</span>
-                      <button className="text-red-600 underline" onClick={()=>setCoitusEvents(prev => prev.filter((_,k)=>k!==i))}>Delete</button>
-                    </li>
-                  ))}
-                  {coitusEvents.length===0 && <li className="text-slate-500">No events logged for this day.</li>}
-                </ul>
-              </div>
-              <div>
-                <div className="text-sm text-slate-600 mb-2">Notes</div>
-                <textarea className="w-full rounded-xl ring-1 ring-slate-200 px-3 py-2 min-h-[88px]" placeholder="ill, travel, alcohol..." value={notes} onChange={e=>setNotes(e.target.value)} />
-              </div>
-              <button className="px-4 py-2 rounded-full bg-emerald-600 text-white text-sm" onClick={async()=>{ await saveSelected() }}>Save day</button>
-            </div>
-          </div>
-        </Card>
-
         {/* Chart */}
         <Card>
           <div className="flex items-center justify-between mb-3">
@@ -261,7 +189,7 @@ export default function Tracker(){
         <Card>
           <Header title={`Decision details for ${selectedId}`} />
           <div className="text-sm text-slate-700 space-y-1">
-            {(out.markers[selectedId]?.explanations ?? ['Nothing particular stands out for this day.']).map((e,i)=> <div key={i}>• {e}</div>)}
+            {decisionList.map((e,i)=> <div key={i}>• {e}</div>)}
           </div>
         </Card>
 
@@ -274,6 +202,29 @@ export default function Tracker(){
           </div>
         </Card>
       </div>
+
+      {/* Daily Modal */}
+      <DailyModal
+        open={modalOpen}
+        onClose={()=>setModalOpen(false)}
+        initial={{
+          id: selectedId,
+          bbt: selectedEntry?.bbt,
+          bleeding: selectedEntry?.bleeding,
+          mucusSensation: selectedEntry?.mucusSensation,
+          mucusAppearance: selectedEntry?.mucusAppearance,
+          notes: selectedEntry?.notes
+        }}
+        onSave={async (patch)=>{
+          const merged = {
+            ...(selectedEntry || { id: selectedId }),
+            ...patch
+          }
+          await db.days.put(merged as DbDay)
+          const ds = await db.days.toArray()
+          setEntries(ds.sort((a,b)=> a.id.localeCompare(b.id)) as Entry[])
+        }}
+      />
     </div>
   )
 }
