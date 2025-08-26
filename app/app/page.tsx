@@ -192,8 +192,3 @@ export default function Tracker(){
     </div>
   )
 }
-
-// Named exports to satisfy any accidental imports elsewhere
-export const PageComponent = Tracker
-export type PageComponentType = typeof Tracker
-export {}
